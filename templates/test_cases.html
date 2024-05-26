@@ -1,0 +1,65 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<h2>Test Cases</h2>
+<button id="toggle-form">Add New Test Case</button>
+<form id="test-case-form" style="display:none;">
+    <label for="name">Name:</label>
+    <input type="text" id="name" name="name" required>
+    <label for="description">Description:</label>
+    <input type="text" id="description" name="description">
+    <label for="command">Command:</label>
+    <input type="text" id="command" name="command" required>
+    <label for="ssh_connection_id">SSH Connection ID:</label>
+    <input type="number" id="ssh_connection_id" name="ssh_connection_id" required>
+    <button type="submit">Add Test Case</button>
+</form>
+<div id="test-cases-list"></div>
+
+<script>
+document.getElementById('toggle-form').addEventListener('click', () => {
+    const form = document.getElementById('test-case-form');
+    form.style.display = form.style.display === 'none' ? 'block' : 'none';
+});
+
+document.getElementById('test-case-form').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const name = document.getElementById('name').value;
+    const description = document.getElementById('description').value;
+    const command = document.getElementById('command').value;
+    const ssh_connection_id = document.getElementById('ssh_connection_id').value;
+
+    const response = await fetch('/api/test_cases', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name, description, command, ssh_connection_id })
+    });
+
+    if (response.ok) {
+        loadTestCases();
+    }
+});
+
+async function loadTestCases() {
+    const response = await fetch('/api/test_cases');
+    const testCases = await response.json();
+    const list = document.getElementById('test-cases-list');
+    list.innerHTML = '';
+    testCases.forEach(testCase => {
+        const item = document.createElement('div');
+        item.innerHTML = `<p><strong>Name:</strong> ${testCase.name}</p>
+                          <p><strong>Description:</strong> ${testCase.description}</p>
+                          <p><strong>Command:</strong> ${testCase.command}</p>
+                          <button onclick="deleteTestCase(${testCase.id})">Delete</button>`;
+        list.appendChild(item);
+    });
+}
+
+async function deleteTestCase(id) {
+    await fetch(`/api/test_cases/${id}`, { method: 'DELETE' });
+    loadTestCases();
+}
+
+loadTestCases();
+</script>
+{% endblock %}

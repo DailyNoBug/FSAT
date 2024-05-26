@@ -1,0 +1,63 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<h2>SSH Connections</h2>
+<button id="toggle-form">Add New Connection</button>
+<form id="connection-form" style="display:none;" enctype="multipart/form-data">
+    <label for="host">Host:</label>
+    <input type="text" id="host" name="host" required>
+    <label for="port">Port:</label>
+    <input type="number" id="port" name="port" required>
+    <label for="username">Username:</label>
+    <input type="text" id="username" name="username" required>
+    <label for="password">Password:</label>
+    <input type="password" id="password" name="password">
+    <label for="pub_key">Public Key:</label>
+    <input type="file" id="pub_key" name="pub_key" accept=".txt,.pub">
+    <button type="submit">Add Connection</button>
+</form>
+<div id="connections-list"></div>
+
+<script>
+document.getElementById('toggle-form').addEventListener('click', () => {
+    const form = document.getElementById('connection-form');
+    form.style.display = form.style.display === 'none' ? 'block' : 'none';
+});
+
+document.getElementById('connection-form').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const formData = new FormData(e.target);
+
+    const response = await fetch('/api/ssh_connections', {
+        method: 'POST',
+        body: formData
+    });
+
+    if (response.ok) {
+        loadConnections();
+    }
+});
+
+async function loadConnections() {
+    const response = await fetch('/api/ssh_connections');
+    const connections = await response.json();
+    const list = document.getElementById('connections-list');
+    list.innerHTML = '';
+    connections.forEach(connection => {
+        const item = document.createElement('div');
+        item.innerHTML = `<p><strong>Host:</strong> ${connection.host}</p>
+                          <p><strong>Port:</strong> ${connection.port}</p>
+                          <p><strong>Username:</strong> ${connection.username}</p>
+                          <button onclick="deleteConnection(${connection.id})">Delete</button>`;
+        list.appendChild(item);
+    });
+}
+
+async function deleteConnection(id) {
+    await fetch(`/api/ssh_connections/${id}`, { method: 'DELETE' });
+    loadConnections();
+}
+
+loadConnections();
+</script>
+{% endblock %}
